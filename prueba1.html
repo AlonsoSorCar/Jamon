@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Batalla Naval</title>
+    <style>
+        .grid-item {
+            border: 1px solid rgba(0, 0, 0, 0.8);
+            text-align: center;
+            padding: 20px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: auto auto auto auto;
+            padding: 10px;
+        }
+        .grid-container > div {
+            text-align: center;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>Tablero del PC</h2>
+    <div id="pc-board" class="grid-container"></div>
+    <h2>Tablero del Jugador</h2>
+    <div id="player-board" class="grid-container"></div>
+    <button onclick="togglePcShips()">Mostrar/Ocultar barcos enemigos</button>
+    <button onclick="resetGame()">Reiniciar juego</button>
+    <p id="message"></p>
+    <script>
+        var playerBoard = Array(4).fill().map(() => Array(4).fill(''));
+        var pcBoard = Array(4).fill().map(() => Array(4).fill(''));
+        var pcBoardHidden = Array(4).fill().map(() => Array(4).fill(''));
+        var ships = 3;
+        var message = document.getElementById('message');
+        message.textContent = "Coloca tus barcos";
+
+        function createBoard(boardId, board, clickAction) {
+            var boardDiv = document.getElementById(boardId);
+            boardDiv.innerHTML = '';
+            for (var i = 0; i < 4; i++) {
+                for (var j = 0; j < 4; j++) {
+                    var cell = document.createElement('div');
+                    cell.textContent = board[i][j];
+                    cell.className = 'grid-item';
+                    cell.addEventListener('click', clickAction(i, j));
+                    boardDiv.appendChild(cell);
+                }
+            }
+        }
+
+        function placeShips(row, col) {
+            if (playerBoard[row][col] == '' && ships > 0) {
+                playerBoard[row][col] = '1';
+                ships--;
+                createBoard('player-board', playerBoard, (row, col) => () => placeShips(row, col));
+            }
+            if (ships == 0) {
+                message.textContent = "Turno del jugador";
+                createBoard('pc-board', pcBoardHidden, (row, col) => () => playerTurn(row, col));
+            }
+        }
+
+        function placePcShips() {
+            for (var i = 0; i < 3; i++) {
+                while (true) {
+                    var row = Math.floor(Math.random() * 4);
+                    var col = Math.floor(Math.random() * 4);
+                    if (pcBoard[row][col] == '') {
+                        pcBoard[row][col] = '1';
+                        pcBoardHidden[row][col] = '';
+                        break;
+                    }
+                }
+            }
+        }
+
+        function playerTurn(row, col) {
+            if (pcBoard[row][col] == '1') {
+                pcBoard[row][col] = 'Tocado';
+                pcBoardHidden[row][col] = 'Tocado';
+                message.textContent = "Tocado";
+            } else {
+                pcBoardHidden[row][col] = 'Agua';
+                message.textContent = "Agua";
+            }
+            createBoard('pc-board', pcBoardHidden, (row, col) => () => playerTurn(row, col));
+            if (!checkWin()) {
+                pcTurn();
+            }
+        }
+
+        function pcTurn() {
+            while (true) {
+                var row = Math.floor(Math.random() * 4);
+                var col = Math.floor(Math.random() * 4);
+                if (playerBoard[row][col] == '1') {
+                    playerBoard[row][col] = 'Tocado';
+                    message.textContent = "PC Tocado";
+                    break;
+                } else if (playerBoard[row][col] == '') {
+                    playerBoard[row][col] = 'Agua';
+                    message.textContent = "PC Agua";
+                    break;
+                }
+            }
+            createBoard('player-board', playerBoard, (row, col) => () => playerTurn(row, col));
+            checkWin();
+        }
+
+        function checkWin() {
+            if (playerBoard.every(row => row.every(cell => cell != '1'))) {
+                message.textContent = "PC gana!";
+                alert("Fin del juego, PC gana!");
+                return true;
+            } else if (pcBoard.every(row => row.every(cell => cell != '1'))) {
+                message.textContent = "Jugador gana!";
+                alert("Fin del juego, Jugador gana!");
+                return true;
+            }
+            return false;
+        }
+
+        function togglePcShips() {
+            if (pcBoardHidden.toString() == pcBoard.toString()) {
+                createBoard('pc-board', pcBoard, (row, col) => () => {});
+            } else {
+                createBoard('pc-board', pcBoardHidden, (row, col) => () => {});
+            }
+        }
+
+        function resetGame() {
+            playerBoard = Array(4).fill().map(() => Array(4).fill(''));
+            pcBoard = Array(4).fill().map(() => Array(4).fill(''));
+            pcBoardHidden = Array(4).fill().map(() => Array(4).fill(''));
+            ships = 3;
+            message.textContent = "Coloca tus barcos";
+            placePcShips();
+            createBoard('pc-board', pcBoardHidden, (row, col) => () => {});
+            createBoard('player-board', playerBoard, (row, col) => () => placeShips(row, col));
+        }
+
+        placePcShips();
+        createBoard('pc-board', pcBoardHidden, (row, col) => () => {});
+        createBoard('player-board', playerBoard, (row, col) => () => placeShips(row, col));
+    </script>
+</body>
+</html>
